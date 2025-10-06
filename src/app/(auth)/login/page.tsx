@@ -27,9 +27,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { loginUser } from '@/lib/api'; // Fungsi API yang kita buat sebelumnya
+import { loginUser } from '@/lib/api'; 
 
-// 1. Definisikan skema validasi form menggunakan Zod
 const formSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address.',
@@ -39,17 +38,14 @@ const formSchema = z.object({
   }),
 });
 
-// Definisikan tipe untuk response sukses dari API login
 type LoginResponse = {
   token: string;
-  // tambahkan properti lain jika ada dari API
 };
 
 export default function LoginPage() {
   const router = useRouter();
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // 2. Setup React Hook Form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,24 +54,20 @@ export default function LoginPage() {
     },
   });
 
-  // 3. Setup TanStack Query Mutation untuk proses login
   const mutation = useMutation<LoginResponse, Error, z.infer<typeof formSchema>>({
     mutationFn: loginUser,
     onSuccess: (data) => {
-      // Jika sukses, simpan token dan redirect
       localStorage.setItem('authToken', data.token);
-      router.push('/products'); // Arahkan ke halaman katalog produk
+      router.push('/products'); 
     },
     onError: (error) => {
-      // Jika gagal, tampilkan pesan error dari API
       setApiError(error.message);
     },
   });
 
-  // 4. Buat fungsi handler untuk submit form
   function onSubmit(values: z.infer<typeof formSchema>) {
-    setApiError(null); // Reset error setiap kali submit
-    mutation.mutate(values); // Panggil API
+    setApiError(null); 
+    mutation.mutate(values);
   }
 
   return (
