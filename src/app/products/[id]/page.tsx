@@ -1,10 +1,13 @@
 'use client';
 
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 import { notFound } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { BadgeCheck, Star } from 'lucide-react';
 
-import { getProductById } from '@/lib/api';
+import { getProductById, getProducts } from '@/lib/api';
+import type { InfiniteData } from '@tanstack/react-query';
 import { formatIDR } from '@/lib/format';
 import type { ProductDetail } from '@/lib/types';
 
@@ -13,6 +16,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import type { ProductsResponse } from '@/lib/types';
+
 function toIdFromParam(param: string) {
   const idPart = param.split('-')[0];
   return idPart;
@@ -20,6 +27,10 @@ function toIdFromParam(param: string) {
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const id = toIdFromParam(params.id);
+
+  const router = useRouter();                
+  const queryClient = useQueryClient();      
+  const [catLoading, setCatLoading] = useStateSafe(false); 
 
   const { data, isLoading, isError } = useQuery<ProductDetail, Error>({
     queryKey: ['product-detail', id],
@@ -67,6 +78,57 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                   <span>·</span>
                   <span>{data?.soldCount ?? 0} Sold</span>
                 </div>
+              </div>
+
+              <div className="mt-2">
+                {data?.category?.id && (
+                  <Badge
+                    role="button"
+                    onClick={async () => {
+                      if (!data?.category?.id) return;
+                      setCatLoading(true);
+                      const cid = String(data.category.id);
+
+                      const key = ['products', { q: '', sort: 'newest', order: 'desc', categoryId: cid }];
+
+                      await queryClient.prefetchInfiniteQuery<ProductsResponse>({
+                        queryKey: key,
+                        initialPageParam: 1,
+                        queryFn: async ({ pageParam }) => {
+                          const params = new URLSearchParams();
+                          params.set('page', String(pageParam ?? 1));
+                          params.set('limit', '12');
+                          params.set('categoryId', cid);
+                          params.set('sort', 'newest');
+                          params.set('order', 'desc');
+                          const res = await getProducts(params);
+                          const anyRes = res as any;
+                          return (anyRes?.data as ProductsResponse) ?? (anyRes as ProductsResponse);
+                        },
+                        getNextPageParam: (last: any) => {
+                          const { page, totalPages } = last.pagination;
+                          return page < totalPages ? page + 1 : undefined;
+                        },
+                      });
+
+                      const first = queryClient.getQueryData<InfiniteData<ProductsResponse>>(key);
+                      if (!first) {
+                        const params = new URLSearchParams({ page: '1', limit: '12', categoryId: cid, sort: 'newest', order: 'desc' });
+                        const res = await getProducts(params);
+                        const anyRes = res as any;
+                        const payload: ProductsResponse = (anyRes?.data as ProductsResponse) ?? (anyRes as ProductsResponse);
+                        queryClient.setQueryData<InfiniteData<ProductsResponse>>(key, { pages: [payload], pageParams: [1] });
+                      }
+
+                      setCatLoading(false);
+                      router.push(`/products?categoryId=${cid}&sort=newest&order=desc`);
+                    }}
+                    className={`rounded-full cursor-pointer ${catLoading ? 'opacity-60 pointer-events-none' : ''}`}
+                    variant="outline"
+                  >
+                    {catLoading ? 'Loading…' : data.category.name}
+                  </Badge>
+                )}
               </div>
 
               <div className="text-3xl font-semibold">{formatIDR(data?.price ?? 0)}</div>

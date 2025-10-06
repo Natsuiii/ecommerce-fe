@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export type SortKey = 'price' | 'rating' | 'newest' | 'popular';
 export type OrderKey = 'asc' | 'desc';
@@ -55,8 +56,10 @@ export default function FilterSortSheet({
     setOpen(false);
   };
 
+  const router = useRouter();                
+  
   const handleReset = () => {
-    setPreset('newest_desc');
+    router.push(`/products`);
   };
 
   return (

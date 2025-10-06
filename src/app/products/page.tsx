@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import ProductCard from '@/components/catalog/ProductCard';
 import { Button } from '@/components/ui/button';
@@ -12,32 +12,47 @@ import { Search } from 'lucide-react';
 import FilterSortSheet, { SortKey, OrderKey } from '@/components/catalog/FilterSortSheet';
 import { getProducts } from '@/lib/api';
 import type { ProductsResponse, Product } from '@/lib/types';
+import { useSearchParams } from 'next/navigation';
 
 const PAGE_SIZE = 12;
 
 export default function CatalogPage() {
+  const searchParams = useSearchParams();
+
+  // state
   const [q, setQ] = useState('');
-  // default: newest desc (Latest)
   const [sort, setSort] = useState<SortKey>('newest');
   const [order, setOrder] = useState<OrderKey>('desc');
+  const [categoryId, setCategoryId] = useState<string>('');
 
+  // sinkron dari URL → state (trigged setiap kali URL berubah)
+  useEffect(() => {
+    const cid = searchParams.get('categoryId') ?? '';
+    const srt = (searchParams.get('sort') as SortKey) || 'newest';
+    const ord = (searchParams.get('order') as OrderKey) || (srt === 'price' ? 'asc' : 'desc');
+
+    setCategoryId(cid);
+    setSort(srt);
+    setOrder(ord);
+  }, [searchParams]);
+
+  // useInfiniteQuery tetap sama, tapi pakai state di key & fetcher
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } =
     useInfiniteQuery<ProductsResponse, Error>({
-      queryKey: ['products', { q, sort, order }],
+      queryKey: ['products', { q, sort, order, categoryId }],
       initialPageParam: 1,
       queryFn: async ({ pageParam }) => {
         const params = new URLSearchParams();
         params.set('page', String(pageParam ?? 1));
         params.set('limit', String(PAGE_SIZE));
         if (q.trim()) params.set('q', q.trim());
+        if (categoryId) params.set('categoryId', categoryId);
         if (sort) params.set('sort', sort);
         if (order) params.set('order', order);
 
         const res = await getProducts(params);
         const anyRes = res as any;
-        const payload: ProductsResponse =
-          (anyRes?.data as ProductsResponse) ?? (anyRes as ProductsResponse);
-        return payload;
+        return (anyRes?.data as ProductsResponse) ?? (anyRes as ProductsResponse);
       },
       getNextPageParam: (last) => {
         const { page, totalPages } = last.pagination;

@@ -14,7 +14,7 @@ export async function api<T>(endpoint: string, options: RequestOptions = {}): Pr
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
 
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(method !== 'GET' ? { 'Content-Type': 'application/json' } : {}),
     ...options.headers,
     ...(token && { Authorization: `Bearer ${token}` }),
   };
