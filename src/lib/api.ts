@@ -1,4 +1,4 @@
-import { CartItemPayload, CartResponse, CheckoutBody } from "./types";
+import { CartItemPayload, CartResponse, CheckoutBody, MeProfile, UpdateMeBody } from "./types";
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -131,3 +131,9 @@ export const completeOrderItem = (id: number | string) =>
 // (opsional) cancel seluruh order toko
 export const cancelOrder = (id: number | string, reason: string) =>
   api(`/api/orders/${id}/cancel`, { method: 'PATCH', body: { reason } });
+
+// ---- ME (full) ----
+export const getMe = () => api<MeProfile>('/api/me');
+
+export const updateMe = (body: UpdateMeBody) =>
+  api<MeProfile>('/api/me', { method: 'PATCH', body });

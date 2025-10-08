@@ -150,3 +150,32 @@ export type OrderDetail = {
     shop: { id: number; name: string; slug?: string };
   }>;
 };
+
+// ---- Profile ----
+export type MeStats = {
+  orders?: number;
+  completedItems?: number;
+  hasShop?: boolean;
+  totalOrders?: number;  // jagain bila backend pakai nama lain
+  totalSpend?: number;
+  [k: string]: any;
+};
+
+export type MeProfile = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  shop?: { id: number; name: string; slug?: string } | null;
+  stats?: MeStats;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UpdateMeBody = {
+  name?: string;
+  phone?: string;
+  avatarUrl?: string;
+};
+
