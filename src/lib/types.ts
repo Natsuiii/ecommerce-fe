@@ -57,7 +57,7 @@ export type CartItem = {
   id: number;             // itemId
   productId: number;
   qty: number;
-  price: number;
+  priceSnapshot: number;
   subtotal: number;
   product: {
     id: number;

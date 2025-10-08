@@ -62,7 +62,7 @@ export default function CartPage() {
                         <Link href={`/products/${it.product.id}-${it.product.slug ?? ''}`} className="font-medium line-clamp-1 hover:underline">
                           {it.product.title}
                         </Link>
-                        <div className="text-sm text-muted-foreground">{formatIDR(it.price)}</div>
+                        <div className="text-sm text-muted-foreground">{formatIDR(it.priceSnapshot)}</div>
                       </div>
 
                       {/* qty */}
