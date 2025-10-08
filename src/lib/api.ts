@@ -1,4 +1,4 @@
-import { CartItemPayload, CartResponse } from "./types";
+import { CartItemPayload, CartResponse, CheckoutBody } from "./types";
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -109,3 +109,25 @@ export const updateCartItem = (itemId: number, qty: number) =>
 // DELETE /api/cart/items/{itemId}
 export const removeCartItem = (itemId: number) =>
   api(`/api/cart/items/${itemId}`, { method: 'DELETE' });
+
+// POST /api/orders/checkout
+export const checkoutOrders = (body: CheckoutBody) =>
+  api('/api/orders/checkout', { method: 'POST', body });
+
+// GET /api/orders/my?page=&limit=&paymentStatus=
+export const getMyOrders = (params: URLSearchParams) => {
+  const q = params.toString();
+  return api(`/api/orders/my${q ? `?${q}` : ''}`);
+};
+
+// GET /api/orders/{id}
+export const getOrderById = (id: number | string) =>
+  api(`/api/orders/${id}`);
+
+// PATCH /api/orders/items/{id}/complete
+export const completeOrderItem = (id: number | string) =>
+  api(`/api/orders/items/${id}/complete`, { method: 'PATCH' });
+
+// (opsional) cancel seluruh order toko
+export const cancelOrder = (id: number | string, reason: string) =>
+  api(`/api/orders/${id}/cancel`, { method: 'PATCH', body: { reason } });

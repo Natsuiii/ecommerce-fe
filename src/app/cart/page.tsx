@@ -111,7 +111,12 @@ export default function CartPage() {
 
             <div className="mt-4 flex gap-2">
               <Button variant="outline" onClick={() => clear()}>Clear Cart</Button>
-              <Button disabled>Checkout</Button>
+              <Button
+                onClick={() => router.push('/checkout')}
+                disabled={totalQty === 0}
+              >
+                Checkout
+              </Button>
             </div>
           </div>
         </>
