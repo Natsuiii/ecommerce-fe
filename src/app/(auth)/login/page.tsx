@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation } from '@tanstack/react-query';
-
+import { useAuth } from '@/contexts/AuthProvider';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -45,6 +45,7 @@ type LoginResponse = {
 export default function LoginPage() {
   const router = useRouter();
   const [apiError, setApiError] = useState<string | null>(null);
+  const { setTokenAndLoadUser } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,13 +57,12 @@ export default function LoginPage() {
 
   const mutation = useMutation<LoginResponse, Error, z.infer<typeof formSchema>>({
     mutationFn: loginUser,
-    onSuccess: (data) => {
-      localStorage.setItem('authToken', data.token);
-      router.push('/products'); 
+    onSuccess: async (data) => {
+      await setTokenAndLoadUser(data.token);   // ← ini kunci
+      const next = new URLSearchParams(window.location.search).get('next');
+      router.replace(next || '/products');
     },
-    onError: (error) => {
-      setApiError(error.message);
-    },
+    onError: (error) => setApiError(error.message),
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {

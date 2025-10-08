@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useCart } from '@/hooks/useCart';
 
 const Logo = () => (
   <Link href="/" className="flex items-center gap-2">
@@ -27,6 +28,8 @@ export default function Header() {
     </>
   );
 
+  const { totalQty } = useCart();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center">
@@ -41,8 +44,15 @@ export default function Header() {
 
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="relative" asChild>
+              <Link href="/cart">
+                <ShoppingCart className="h-5 w-5" />
+                {isLoggedIn && totalQty > 0 && (
+                  <Badge className="absolute -right-2 -top-2 px-2 py-0.5" variant="destructive">
+                    {totalQty}
+                  </Badge>
+                )}
+              </Link>
             </Button>
 
             {(!isClient || (isLoggedIn && isLoadingUser)) && renderSkeletons()}

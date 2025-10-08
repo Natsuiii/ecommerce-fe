@@ -43,7 +43,9 @@ export default function ProductCard({ p }: { p: Product }) {
 
         <div className="flex items-center gap-2 text-xs">
           <BadgeCheck className="h-4 w-4 text-sky-600" />
-          <span className="truncate">{p.shop?.name}</span>
+          <Link href={`/stores/${p.shop?.slug}`} className="truncate hover:underline">
+            {p.shop?.name}
+          </Link>
         </div>
       </CardContent>
     </Card>

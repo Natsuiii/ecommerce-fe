@@ -1,79 +1,97 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getMyProfile, type UserProfile } from '@/lib/api';
+import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getMyProfile } from '@/lib/api';
 
-type AuthContextType = {
+type Shop = { id: string; name: string } | null;
+type User = { name: string; email: string; shop: Shop } | null;
+
+type Ctx = {
   isClient: boolean;
-  token: string | null;
   isLoggedIn: boolean;
-  user: UserProfile | null;
   isLoadingUser: boolean;
-  login: (token: string) => void;
+  user: User;
+  // API
+  setTokenAndLoadUser: (token: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
-  refetchUser: () => void;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthCtx = React.createContext<Ctx | null>(null);
+export const useAuth = () => {
+  const c = React.useContext(AuthCtx);
+  if (!c) throw new Error('useAuth must be used within AuthProvider');
+  return c;
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const qc = useQueryClient();
-  const [isClient, setIsClient] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
 
-  // only read localStorage on client
-  useEffect(() => {
+  const [isClient, setIsClient] = React.useState(false);
+  const [token, setToken] = React.useState<string | null>(null);
+  const [user, setUser] = React.useState<User>(null);
+  const [isLoadingUser, setIsLoadingUser] = React.useState(false);
+
+  // on mount: sinkron dari localStorage
+  React.useEffect(() => {
     setIsClient(true);
-    setToken(localStorage.getItem('authToken'));
-
-    // sync antar tab
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'authToken') setToken(e.newValue);
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    const t = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    setToken(t);
   }, []);
 
   const isLoggedIn = !!token;
 
-  const { data: user, isLoading: isLoadingUser, refetch } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: getMyProfile,
-    enabled: isClient && isLoggedIn,  
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-  });
+  const loadUser = React.useCallback(async () => {
+    if (!token) { setUser(null); return; }
+    setIsLoadingUser(true);
+    try {
+      const res = await getMyProfile();
+      const any = res as any;
+      const profile = (any?.data ?? any) as User;
+      setUser(profile);
+    } catch {
+      // token invalid → bersihkan
+      localStorage.removeItem('authToken');
+      setToken(null);
+      setUser(null);
+    } finally {
+      setIsLoadingUser(false);
+    }
+  }, [token]);
 
-  const login = (newToken: string) => {
-    localStorage.setItem('authToken', newToken);
-    setToken(newToken);
-    qc.removeQueries({ queryKey: ['userProfile'] });
-    refetch();
-  };
+  // auto load saat token berubah
+  React.useEffect(() => { if (isLoggedIn) loadUser(); }, [isLoggedIn, loadUser]);
 
-  const logout = () => {
+  // API untuk login
+  const setTokenAndLoadUser = React.useCallback(async (t: string) => {
+    localStorage.setItem('authToken', t);
+    setToken(t);            // ← trigger isLoggedIn true
+    await loadUser();       // ← langsung ambil /api/me
+    // invalidasi cache yang tergantung auth (opsional)
+    qc.invalidateQueries();
+  }, [loadUser, qc]);
+
+  const refreshUser = React.useCallback(async () => {
+    await loadUser();
+  }, [loadUser]);
+
+  const logout = React.useCallback(() => {
     localStorage.removeItem('authToken');
     setToken(null);
-    qc.removeQueries({ queryKey: ['userProfile'] });
+    setUser(null);
+    qc.clear(); // opsional: bersihkan seluruh cache
+  }, [qc]);
+
+  const value: Ctx = {
+    isClient,
+    isLoggedIn,
+    isLoadingUser,
+    user,
+    setTokenAndLoadUser,
+    refreshUser,
+    logout,
   };
 
-  const value = useMemo<AuthContextType>(() => ({
-    isClient,
-    token,
-    isLoggedIn,
-    user: user ?? null,
-    isLoadingUser,
-    login,
-    logout,
-    refetchUser: refetch,
-  }), [isClient, token, isLoggedIn, user, isLoadingUser, refetch]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextType {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
-  return ctx;
+  return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

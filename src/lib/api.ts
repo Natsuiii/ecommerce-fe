@@ -1,3 +1,5 @@
+import { CartItemPayload, CartResponse } from "./types";
+
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   headers?: HeadersInit;
@@ -82,3 +84,28 @@ export const getProducts = (params: URLSearchParams) => {
 export const getProductById = (id: string) => {
   return api(`/api/products/${id}`);
 };
+
+export const getStoreBySlug = (slug: string, params: URLSearchParams) => {
+  const query = params.toString();
+  const suffix = query ? `?${query}` : '';
+  return api(`/api/stores/slug/${slug}${suffix}`);
+};
+
+
+// GET /api/cart
+export const getCart = () => api<CartResponse>('/api/cart');
+
+// DELETE /api/cart
+export const clearCart = () => api('/api/cart', { method: 'DELETE' });
+
+// POST /api/cart/items
+export const addCartItem = (body: CartItemPayload) =>
+  api('/api/cart/items', { method: 'POST', body });
+
+// PATCH /api/cart/items/{itemId}
+export const updateCartItem = (itemId: number, qty: number) =>
+  api(`/api/cart/items/${itemId}`, { method: 'PATCH', body: { qty } });
+
+// DELETE /api/cart/items/{itemId}
+export const removeCartItem = (itemId: number) =>
+  api(`/api/cart/items/${itemId}`, { method: 'DELETE' });

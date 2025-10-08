@@ -20,6 +20,9 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ProductsResponse } from '@/lib/types';
 
+import { useAuth } from '@/contexts/AuthProvider';
+import { useCart } from '@/hooks/useCart';
+
 function toIdFromParam(param: string) {
   const idPart = param.split('-')[0];
   return idPart;
@@ -31,6 +34,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const router = useRouter();                
   const queryClient = useQueryClient();      
   const [catLoading, setCatLoading] = useStateSafe(false); 
+  const [qty, setQty] = useStateSafe(1); // ← dipakai untuk Add to Cart
 
   const { data, isLoading, isError } = useQuery<ProductDetail, Error>({
     queryKey: ['product-detail', id],
@@ -46,12 +50,15 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
   if (isError) return notFound();
 
+  const { isLoggedIn } = useAuth();
+  const { addItem } = useCart();
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumbs */}
       <div className="text-sm text-muted-foreground mb-4">
-        <span className="hover:underline cursor-pointer">Home</span> /{' '}
-        <span className="hover:underline cursor-pointer">Products</span> /{' '}
+        <Link href="/" className="hover:underline">Home</Link> /{' '}
+        <Link href="/products" className="hover:underline">Products</Link> /{' '}
         <span className="text-foreground">{data?.title ?? '...'}</span>
       </div>
 
@@ -143,13 +150,23 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               {/* Shop */}
               <div className="flex items-center gap-2 text-sm">
                 <BadgeCheck className="h-5 w-5 text-sky-600" />
-                <span className="font-medium">{data?.shop?.name}</span>
+                <Link href={`/stores/${data?.shop?.slug}`} className="font-medium hover:underline">
+                  {data?.shop?.name}
+                </Link>
               </div>
 
               {/* Quantity + CTA */}
               <div className="flex items-center gap-3">
-                <QuantityPicker />
-                <Button className="px-6">Add to Cart</Button>
+                <QuantityPicker qty={qty} setQty={setQty} />  {/* ← kirim props */}
+                <Button
+                  className="px-6"
+                  onClick={() => {
+                    if (!isLoggedIn) return router.push('/login?next=' + encodeURIComponent('/cart'));
+                    addItem(Number(data?.id), qty); // ← sekarang qty dikenali
+                  }}
+                >
+                  Add to Cart
+                </Button>
                 <Button variant="outline">Buy Now</Button>
               </div>
 
@@ -169,11 +186,16 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   );
 }
 
-function QuantityPicker() {
-  const [qty, setQty] = useStateSafe(1);
+function QuantityPicker({
+  qty,
+  setQty,
+}: {
+  qty: number;
+  setQty: React.Dispatch<React.SetStateAction<number>>;
+}) {
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon" onClick={() => setQty((q) => Math.max(1, q - 1))}>-</Button>
+      <Button variant="outline" size="icon" onClick={() => setQty(q => Math.max(1, q - 1))}>-</Button>
       <Input
         value={qty}
         onChange={(e) => {
@@ -183,10 +205,11 @@ function QuantityPicker() {
         className="w-16 text-center"
         inputMode="numeric"
       />
-      <Button variant="outline" size="icon" onClick={() => setQty((q) => q + 1)}>+</Button>
+      <Button variant="outline" size="icon" onClick={() => setQty(q => q + 1)}>+</Button>
     </div>
   );
 }
+
 
 // small internal hook to avoid SSR mismatch on initial value
 import * as React from 'react';
