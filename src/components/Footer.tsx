@@ -11,7 +11,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Brand + about + socials */}
           <div>
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/products" className="flex items-center gap-2">
               <span className="text-2xl">✶</span>
               <span className="text-xl font-bold tracking-tight">Shirt</span>
             </Link>

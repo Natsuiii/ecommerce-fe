@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LayoutGrid, Search, ShoppingCart, Store, LogOut, User } from 'lucide-react';
+import { LayoutGrid, Search, ShoppingCart, Store, LogOut, User, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,9 +11,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useCart } from '@/hooks/useCart';
+import { redirect } from 'next/navigation';
 
 const Logo = () => (
-  <Link href="/" className="flex items-center gap-2">
+  <Link href="/products" className="flex items-center gap-2">
     <span className="text-xl font-bold tracking-tight">✶ Shirt</span>
   </Link>
 );
@@ -99,6 +100,11 @@ export default function Header() {
                     <DropdownMenuItem>
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => redirect('/orders')}>
+                      <List className="mr-2 h-4 w-4" />
+                      <span>Orders</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout}>
