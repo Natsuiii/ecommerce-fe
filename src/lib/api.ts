@@ -1,9 +1,9 @@
-import { CartItemPayload, CartResponse, CheckoutBody, MeProfile, UpdateMeBody } from "./types";
+import { AuthLoginResponse, CartItemPayload, CartResponse, Category, CategoryResponse, CheckoutBody, CreateProductResponse, LoginPayload, LoginResponse, MeProfile, RegisterPayload, RegisterResponse, SellerActivateBody, SellerActivateResponse, SellerProductsResponse, SellerShopResponse, UpdateMeBody, UpdateShopBody, UpdateShopResponse } from "./types";
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   headers?: HeadersInit;
-  body?: object;
+  body?: object | FormData; 
 };
 
 export async function api<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -15,8 +15,11 @@ export async function api<T>(endpoint: string, options: RequestOptions = {}): Pr
   const url = `${baseURL}${endpoint}`;
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
 
+  // ⬇️ kalau body FormData, JANGAN set Content-Type JSON
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const headers: HeadersInit = {
-    ...(method !== 'GET' ? { 'Content-Type': 'application/json' } : {}),
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...options.headers,
     ...(token && { Authorization: `Bearer ${token}` }),
   };
@@ -25,35 +28,42 @@ export async function api<T>(endpoint: string, options: RequestOptions = {}): Pr
     const response = await fetch(url, {
       method,
       headers,
-      body: method !== 'GET' && body ? JSON.stringify(body) : undefined,
+      body:
+        method !== 'GET'
+          ? (isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined)
+          : undefined,
     });
 
-    const json = await response.json().catch(() => ({}));
-
     if (!response.ok) {
-      const message = (json && (json.message || json.error || json.msg)) || 'Something went wrong';
-      throw new Error(message);
+      // response bisa kosong; guard
+      let errorMsg = 'Something went wrong';
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.message || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
     }
 
-    const unwrapped = json && typeof json === 'object' && 'data' in json ? json.data : json;
-    return unwrapped as T;
+    return response.json() as Promise<T>;
   } catch (error) {
     console.error('API call failed:', error);
     throw error;
   }
 }
 
-
-export type LoginPayload = {
-  email: string;
-  password?: string; 
-};
-
-export type LoginResponse = {
-  token: string;
-};
-
 // --- AUTH ---
+// multipart register
+export const registerUserMultipart = (data: RegisterPayload) => {
+  const fd = new FormData();
+  fd.append('name', data.name);
+  fd.append('email', data.email);
+  fd.append('password', data.password);
+  if (data.avatarFile) fd.append('avatar', data.avatarFile);
+  if (data.avatarUrl) fd.append('avatarUrl', data.avatarUrl);
+
+  return api<RegisterResponse>('/api/auth/register', { method: 'POST', body: fd });
+};
+
 // POST /api/auth/register [cite: 20]
 export const registerUser = (data: object) => {
   return api('/api/auth/register', { method: 'POST', body: data });
@@ -61,7 +71,7 @@ export const registerUser = (data: object) => {
 
 // POST /api/auth/login
 export const loginUser = (data: LoginPayload) => {
-  return api<LoginResponse>('/api/auth/login', { method: 'POST', body: data });
+  return api<AuthLoginResponse>('/api/auth/login', { method: 'POST', body: data });
 };
 
 export type UserProfile = {
@@ -137,3 +147,43 @@ export const getMe = () => api<MeProfile>('/api/me');
 
 export const updateMe = (body: UpdateMeBody) =>
   api<MeProfile>('/api/me', { method: 'PATCH', body });
+
+export const activateSeller = (body: SellerActivateBody) => {
+  const fd = new FormData();
+  fd.append('name', body.name);
+  fd.append('slug', body.slug);
+  fd.append('address', body.address);
+  if (body.logoFile) fd.append('logo', body.logoFile);
+
+  return api<SellerActivateResponse>('/api/seller/activate', {
+    method: 'POST',
+    body: fd,
+  });
+};
+
+// GET /api/seller/shop
+export const getSellerShop = () =>
+  api<SellerShopResponse>('/api/seller/shop');
+
+// PATCH /api/seller/shop  (selalu pakai FormData agar bisa kirim file)
+export const updateMyShop = (body: UpdateShopBody) => {
+  const fd = new FormData();
+  if (body.name) fd.append('name', body.name);
+  if (body.slug) fd.append('slug', body.slug);
+  if (body.address) fd.append('address', body.address);
+  if (body.logoFile) fd.append('logo', body.logoFile);
+
+  return api<UpdateShopResponse>('/api/seller/shop', {
+    method: 'PATCH',
+    body: fd,
+  });
+};
+
+// lib/api.ts (tambahkan kalau belum ada)
+export const getCategories = () => api<CategoryResponse>('/api/categories');
+
+export const createSellerProduct = (fd: FormData) =>
+  api<CreateProductResponse>('/api/seller/products', { method: 'POST', body: fd });
+
+export const getSellerProducts = (params: URLSearchParams) =>
+  api<SellerProductsResponse>(`/api/seller/products?${params.toString()}`);

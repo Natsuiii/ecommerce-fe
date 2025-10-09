@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useMutation } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthProvider';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthProvider";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,7 +16,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -24,17 +24,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { loginUser } from '@/lib/api'; 
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { loginUser } from "@/lib/api";
+import { AuthLoginResponse } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email({
-    message: 'Please enter a valid email address.',
+    message: "Please enter a valid email address.",
   }),
   password: z.string().min(6, {
-    message: 'Password must be at least 6 characters.',
+    message: "Password must be at least 6 characters.",
   }),
 });
 
@@ -43,30 +44,38 @@ type LoginResponse = {
 };
 
 export default function LoginPage() {
+  const { isLoggedIn } = useAuth();
   const router = useRouter();
   const [apiError, setApiError] = useState<string | null>(null);
   const { setTokenAndLoadUser } = useAuth();
 
+  if (isLoggedIn) router.push("/products");
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
   });
 
-  const mutation = useMutation<LoginResponse, Error, z.infer<typeof formSchema>>({
+  const mutation = useMutation<
+    AuthLoginResponse,
+    Error,
+    z.infer<typeof formSchema>
+  >({
     mutationFn: loginUser,
-    onSuccess: async (data) => {
-      await setTokenAndLoadUser(data.token);   // ← ini kunci
-      const next = new URLSearchParams(window.location.search).get('next');
-      router.replace(next || '/products');
+    onSuccess: async (res) => {
+      const token = res?.data?.token;
+      if (!token) throw new Error("No token returned");
+      await setTokenAndLoadUser(token);
+      router.push("/products");
     },
     onError: (error) => setApiError(error.message),
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    setApiError(null); 
+    setApiError(null);
     mutation.mutate(values);
   }
 
@@ -109,21 +118,29 @@ export default function LoginPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Input type="password" placeholder="Password" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="Password"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Logging in...' : 'Login'}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={mutation.isPending}
+              >
+                {mutation.isPending ? "Logging in..." : "Login"}
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            Don't have an account?{" "}
             <Link href="/register" className="font-medium underline font-bold">
               Register
             </Link>

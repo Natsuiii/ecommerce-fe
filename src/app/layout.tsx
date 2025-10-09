@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Providers from '@/../components/Providers';
-import Header from '@/components/Header';
 import { ThemeProvider } from '@/../components/ThemeProvider';
-import Footer from '@/components/Footer';
+import ClientShell from './clientShell';
+import { Toaster } from '@/components/ui/sonner' // dari shadcn component
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -13,14 +13,11 @@ export const metadata: Metadata = {
   description: 'Your favorite online store',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning> 
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <Toaster richColors position="top-center" /> 
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -28,9 +25,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Providers>
-            <Header />
-            <main>{children}</main>
-            <Footer />
+            <ClientShell>{children}</ClientShell>
           </Providers>
         </ThemeProvider>
       </body>

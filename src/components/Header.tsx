@@ -72,12 +72,12 @@ export default function Header() {
             {isClient && isLoggedIn && !isLoadingUser && user && (
               <>
                 {user.shop ? (
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2" onClick={() => redirect('/seller')}>
                     <Store className="h-4 w-4" />
                     {user.shop.name}
                   </Button>
                 ) : (
-                  <Button variant="default" className="gap-2">
+                  <Button variant="default" className="gap-2" onClick={() => redirect('/seller/activate')}>
                     <Store className="h-4 w-4" />
                     Open Store
                   </Button>

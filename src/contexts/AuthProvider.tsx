@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { getMyProfile } from '@/lib/api';
+import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getMyProfile } from "@/lib/api";
 
 type Shop = { id: string; name: string } | null;
 type User = { name: string; email: string; shop: Shop } | null;
@@ -21,7 +21,7 @@ type Ctx = {
 const AuthCtx = React.createContext<Ctx | null>(null);
 export const useAuth = () => {
   const c = React.useContext(AuthCtx);
-  if (!c) throw new Error('useAuth must be used within AuthProvider');
+  if (!c) throw new Error("useAuth must be used within AuthProvider");
   return c;
 };
 
@@ -36,14 +36,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // on mount: sinkron dari localStorage
   React.useEffect(() => {
     setIsClient(true);
-    const t = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    const t =
+      typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
     setToken(t);
   }, []);
 
   const isLoggedIn = !!token;
 
   const loadUser = React.useCallback(async () => {
-    if (!token) { setUser(null); return; }
+    const t =
+      typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+    if (!t) {
+      setUser(null);
+      return;
+    }
+
     setIsLoadingUser(true);
     try {
       const res = await getMyProfile();
@@ -51,33 +58,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = (any?.data ?? any) as User;
       setUser(profile);
     } catch {
-      // token invalid → bersihkan
-      localStorage.removeItem('authToken');
-      setToken(null);
+      localStorage.removeItem("authToken");
       setUser(null);
     } finally {
       setIsLoadingUser(false);
     }
-  }, [token]);
+  }, []); // ← kosong, jangan [token]
 
   // auto load saat token berubah
-  React.useEffect(() => { if (isLoggedIn) loadUser(); }, [isLoggedIn, loadUser]);
+  React.useEffect(() => {
+    if (isLoggedIn) loadUser();
+  }, [isLoggedIn, loadUser]);
 
   // API untuk login
-  const setTokenAndLoadUser = React.useCallback(async (t: string) => {
-    localStorage.setItem('authToken', t);
-    setToken(t);            // ← trigger isLoggedIn true
-    await loadUser();       // ← langsung ambil /api/me
-    // invalidasi cache yang tergantung auth (opsional)
-    qc.invalidateQueries();
-  }, [loadUser, qc]);
+  const setTokenAndLoadUser = React.useCallback(
+    async (t: string) => {
+      localStorage.setItem("authToken", t);
+      setToken(t);
+      await loadUser(); // sekarang pasti pakai token terbaru dari localStorage
+      qc.invalidateQueries();
+    },
+    [loadUser, qc]
+  );
+
+  React.useEffect(() => {
+    if (isLoggedIn) loadUser();
+  }, [isLoggedIn, loadUser]);
 
   const refreshUser = React.useCallback(async () => {
     await loadUser();
   }, [loadUser]);
 
   const logout = React.useCallback(() => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem("authToken");
     setToken(null);
     setUser(null);
     qc.clear(); // opsional: bersihkan seluruh cache
