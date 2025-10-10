@@ -1,9 +1,8 @@
 "use client";
 
-import { connection } from 'next/server'
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
@@ -71,19 +70,16 @@ type FormValues = z.infer<typeof formSchema>; // { name, phone, email, password,
 
 /* -------------------------------- Page -------------------------------- */
 
-export default async function RegisterPage() {
-  await connection()
+export default function RegisterPage() {
   const { isLoggedIn } = useAuth();
   const { setTokenAndLoadUser } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/products";
 
   const [apiError, setApiError] = React.useState<string | null>(null);
   const [showPw, setShowPw] = React.useState(false);
   const [showPw2, setShowPw2] = React.useState(false);
 
-  if (isLoggedIn) router.push(next);
+  if (isLoggedIn) router.push('/products');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -157,7 +153,7 @@ export default async function RegisterPage() {
       if (!token) throw new Error("No token from login response");
 
       await setTokenAndLoadUser(token);
-      router.push(next);
+      router.push("/products");
     } catch (err: any) {
       setApiError(err?.message || "Failed to register. Please try again.");
     }
@@ -345,7 +341,7 @@ export default async function RegisterPage() {
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
-              href={`/login?next=${encodeURIComponent(next)}`}
+              href={`/login?next=${encodeURIComponent("/products")}`}
               className="font-medium underline"
             >
               Log In
