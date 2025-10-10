@@ -1,5 +1,6 @@
 "use client";
 
+import { connection } from 'next/server'
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -70,7 +71,8 @@ type FormValues = z.infer<typeof formSchema>; // { name, phone, email, password,
 
 /* -------------------------------- Page -------------------------------- */
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  await connection()
   const { isLoggedIn } = useAuth();
   const { setTokenAndLoadUser } = useAuth();
   const router = useRouter();

@@ -38,6 +38,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { connection } from "next/server";
 
 function useQueryState() {
   const router = useRouter();
@@ -84,7 +85,8 @@ function EmptyState() {
 
 /* ------------------------------- Page -------------------------------- */
 
-export default function SellerProductsPage() {
+export default async function SellerProductsPage() {
+   await connection()
   const { q, isActive, page, limit, set } = useQueryState();
   const [search, setSearch] = React.useState(q);
 

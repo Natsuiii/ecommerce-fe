@@ -16,10 +16,12 @@ import FilterSortSheet, { type SortKey, type OrderKey } from '@/components/catal
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { connection } from 'next/server';
 
 const PAGE_SIZE = 12;
 
-export default function StorePage({ params }: { params: { slug: string } }) {
+export default async function StorePage({ params }: { params: { slug: string } }) {
+   await connection()
   const slug = params.slug;
   const sp = useSearchParams();
   const router = useRouter();

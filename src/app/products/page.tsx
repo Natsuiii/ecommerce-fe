@@ -13,10 +13,12 @@ import FilterSortSheet, { SortKey, OrderKey } from '@/components/catalog/FilterS
 import { getProducts } from '@/lib/api';
 import type { ProductsResponse, Product } from '@/lib/types';
 import { useSearchParams } from 'next/navigation';
+import { connection } from 'next/server';
 
 const PAGE_SIZE = 12;
 
-export default function CatalogPage() {
+export default async function CatalogPage() {
+   await connection()
   const searchParams = useSearchParams();
 
   // state
