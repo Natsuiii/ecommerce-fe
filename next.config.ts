@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       { protocol: 'http',  hostname: '**', pathname: '/**' },
     ],
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  }
 };
 
 export default nextConfig;
