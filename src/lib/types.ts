@@ -82,6 +82,7 @@ export type CartItem = {
   qty: number;
   priceSnapshot: number;
   subtotal: number;
+  price: number;
   product: {
     id: number;
     title: string;
